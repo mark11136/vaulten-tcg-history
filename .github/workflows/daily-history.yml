@@ -83,6 +83,7 @@ jobs:
         run: |
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$CLOUDFLARE_API_TOKEN"
+          node scripts/check-production-branch.cjs
           npx --no-install wrangler pages deploy public --project-name "$CF_PAGES_PROJECT" --branch "$CF_PAGES_BRANCH" --commit-dirty=true
       - name: Verify the actual public manifest and all its shards
         if: steps.build.outputs.changed == 'true'
