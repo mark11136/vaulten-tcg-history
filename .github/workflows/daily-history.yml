@@ -1,0 +1,107 @@
+name: Daily verified card-price history
+
+on:
+  schedule:
+    - cron: '17 8 * * *'
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: 'First deployment only: initialize from the bundled verified seed'
+        required: false
+        default: false
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: vaulten-history-production
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: write # Commit only the real, verified publication manifest.
+    env:
+      HISTORY_BASE_URL: ${{ vars.HISTORY_BASE_URL }}
+      CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+      CF_PAGES_BRANCH: ${{ vars.CF_PAGES_BRANCH || github.event.repository.default_branch }}
+      WRANGLER_SEND_METRICS: 'false'
+      CI: 'true'
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: true
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install the locked deployment tool
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run offline integrity and pipeline tests
+        run: npm test
+      - name: Restore verified source responses and the 24-hour request ledger
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .work/archive-cache
+          key: tcgcsv-source-v1-restore-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            tcgcsv-source-v1-
+      - name: Validate public configuration
+        run: |
+          node -e "require('./scripts/common.cjs').baseUrl(process.env.HISTORY_BASE_URL); for (const k of ['CF_PAGES_PROJECT','CF_PAGES_BRANCH']) if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,62}$/.test(process.env[k] || '')) throw new Error(k+' is not configured correctly')"
+      - name: Acquire the last verified published data, or first-run seed
+        env:
+          BOOTSTRAP: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap && 'true' || 'false' }}
+        run: node scripts/source.cjs
+      - name: Build the next complete generation
+        id: build
+        run: node scripts/build.cjs
+      - name: Prepare the partial or complete source checkpoint
+        id: checkpoint
+        if: always() && steps.build.outcome != 'skipped'
+        run: node scripts/cache-checkpoint.cjs
+      - name: Save verified source cache even after a failed collection
+        if: always() && steps.checkpoint.outputs.present == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .work/archive-cache
+          key: tcgcsv-source-v1-${{ steps.checkpoint.outputs.marker }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Validate every output shard
+        if: steps.build.outputs.changed == 'true'
+        run: node scripts/validate.cjs public
+      - name: Publish the complete static generation
+        if: steps.build.outputs.changed == 'true'
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          npx --no-install wrangler pages deploy public --project-name "$CF_PAGES_PROJECT" --branch "$CF_PAGES_BRANCH" --commit-dirty=true
+      - name: Verify the actual public manifest and all its shards
+        if: steps.build.outputs.changed == 'true'
+        run: node scripts/verify-live.cjs
+      - name: Record the meaningful published data snapshot
+        if: steps.build.outputs.changed == 'true'
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data/latest-manifest.json
+          if git diff --cached --quiet; then
+            echo "The verified source-data manifest is already recorded."
+            exit 0
+          fi
+          git commit -m "Record verified price-history source generation"
+          git push origin "HEAD:$DEFAULT_BRANCH"
+      - name: Report unchanged source
+        if: steps.build.outputs.changed != 'true'
+        run: echo "No new upstream source generation. No deployment or artificial activity commit."
+

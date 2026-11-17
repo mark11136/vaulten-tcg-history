@@ -1,0 +1,10 @@
+/*
+  Access-Control-Allow-Origin: *
+  X-Content-Type-Options: nosniff
+  X-Robots-Tag: noindex
+/vaulten-history-*.json
+  Cache-Control: public, max-age=31536000, immutable
+/vaulten-history-manifest.json
+  ! Cache-Control
+  Cache-Control: public, max-age=300, must-revalidate
+

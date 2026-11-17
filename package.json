@@ -1,0 +1,20 @@
+{
+  "name": "vaulten-pricewatch-daily",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Daily verified raw-history build and static publication for Vaulten TCG",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "source": "node scripts/source.cjs",
+    "build": "node scripts/build.cjs",
+    "validate": "node scripts/validate.cjs public",
+    "verify": "node scripts/verify-live.cjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.163.0"
+  }
+}
+
