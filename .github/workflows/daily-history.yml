@@ -12,6 +12,11 @@ on:
         required: false
         default: false
         type: boolean
+      redeploy:
+        description: 'Redeploy verified published data and Functions without checking upstream prices'
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -48,6 +53,7 @@ jobs:
       - name: Run offline integrity and pipeline tests
         run: npm test
       - name: Restore verified source responses and the 24-hour request ledger
+        if: github.event_name != 'workflow_dispatch' || !inputs.redeploy
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .work/archive-cache
@@ -63,10 +69,12 @@ jobs:
         run: node scripts/source.cjs
       - name: Build the next complete generation
         id: build
+        env:
+          REDEPLOY: ${{ github.event_name == 'workflow_dispatch' && inputs.redeploy && 'true' || 'false' }}
         run: node scripts/build.cjs
       - name: Prepare the partial or complete source checkpoint
         id: checkpoint
-        if: always() && steps.build.outcome != 'skipped'
+        if: always() && steps.build.outcome != 'skipped' && (github.event_name != 'workflow_dispatch' || !inputs.redeploy)
         run: node scripts/cache-checkpoint.cjs
       - name: Save verified source cache even after a failed collection
         if: always() && steps.checkpoint.outputs.present == 'true'

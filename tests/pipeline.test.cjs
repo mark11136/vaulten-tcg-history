@@ -146,6 +146,21 @@ test('unchanged upstream does not deploy or create public output',async t=>{
   const {root}=await setupStage(t);const out=await stage({root,run:()=>({status:0})});
   assert.equal(out.changed,false);assert.equal(await fs.stat(path.join(root,'public')).catch(()=>null),null);
 });
+test('explicit manual redeploy preserves every published byte and does not run the price collector',async t=>{
+  const {root,f}=await setupStage(t);let called=false;
+  const out=await stage({root,redeploy:true,event:'workflow_dispatch',run:()=>{called=true;throw Error('Collector must not run');}});
+  assert.equal(called,false);assert.equal(out.redeploy,true);assert.equal(out.bootstrap,false);
+  assert.deepEqual(await fs.readFile(path.join(root,'public',MANIFEST)),f.bytes);
+  assert.deepEqual(await fs.readFile(path.join(root,'public',f.meta.name)),f.body);
+  assert.equal((await validate(path.join(root,'public'))).valid,true);
+});
+test('redeploy cannot be activated by schedule or used with a seed',async t=>{
+  const normal=await setupStage(t),seed=await setupStage(t,'seed');
+  await assert.rejects(stage({root:normal.root,redeploy:true,event:'schedule'}),/explicit manual/);
+  await assert.rejects(stage({root:seed.root,redeploy:true,event:'workflow_dispatch'}),/published generation/);
+  assert.equal(await fs.stat(path.join(normal.root,'public')).catch(()=>null),null);
+  assert.equal(await fs.stat(path.join(seed.root,'public')).catch(()=>null),null);
+});
 test('first bootstrap can publish verified seed on a successful unchanged source check',async t=>{
   const {root}=await setupStage(t,'seed');const out=await stage({root,run:()=>({status:0})});
   assert.equal(out.changed,true);assert.equal(out.bootstrap,true);assert.equal((await validate(path.join(root,'public'))).valid,true);
