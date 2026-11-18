@@ -10,8 +10,13 @@ function json(value,status=200,cache=false) {
 }
 function publicKeys(value) {
   if(!value || typeof value!=='object' || !Array.isArray(value.keys) || value.keys.length<1 || value.keys.length>20)throw Error('Invalid public keys');
+  for(const key of value.keys)if(!key || typeof key!=='object' || Array.isArray(key) || ['d','p','q','dp','dq','qi','oth','k'].some(name=>Object.hasOwn(key,name)))throw Error('Invalid public key');
+  // Shopify publishes other signing algorithms alongside the RS256 ID-token key.
+  // Only the algorithm advertised for ID tokens is exposed by this endpoint.
+  const candidates=value.keys.filter(key=>key.kty==='RSA' && (key.alg==null || key.alg==='RS256') && (key.use==null || key.use==='sig'));
+  if(!candidates.length)throw Error('RS256 keys unavailable');
   const ids=new Set();
-  const keys=value.keys.map(key=>{
+  const keys=candidates.map(key=>{
     if(!key || typeof key!=='object' || Array.isArray(key) || key.kty!=='RSA' ||
       key.alg!=null && key.alg!=='RS256' || key.use!=null && key.use!=='sig' ||
       typeof key.kid!=='string' || !key.kid || key.kid.length>200 || /[\u0000-\u0020\u007f]/.test(key.kid) || ids.has(key.kid) ||
