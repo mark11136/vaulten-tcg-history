@@ -1,6 +1,6 @@
 # Vaulten TCG – napi árdiagram-adatok
 
-Ez a külön adattár naponta **08:17 UTC-kor** ellenőrzött, ingyenes raw árdiagram-adatcsomagot készít, és Cloudflare Pagesre teszi. A Shopify weboldal a publikus JSON-fájlokat olvassa. A futás nem módosít Shopify-t, és nem tartalmaz fizetős vagy minősítettkártya-adatforrást.
+Ez a külön adattár naponta **00:37, 06:37, 12:37 és 18:37 UTC-kor** ellenőrzi az ingyenes raw árdiagram-adatok forrását. Csak új forrásgeneráció esetén készít ellenőrzött adatcsomagot és teszi Cloudflare Pagesre. A négy indítási lehetőség csökkenti egy kimaradó vagy késő forrásfrissítés hatását. A Shopify weboldal a publikus JSON-fájlokat olvassa. A futás nem módosít Shopify-t, és nem tartalmaz fizetős vagy minősítettkártya-adatforrást.
 
 ## Egyszeri beállítás
 
@@ -13,7 +13,7 @@ Ez a külön adattár naponta **08:17 UTC-kor** ellenőrzött, ingyenes raw árd
 5. Actions → **Daily verified card-price history** → Run workflow, első alkalommal `bootstrap=true`. A seed minden fájlja SHA-256 ellenőrzést kap. Később ezt hagyd `false` értéken: a rendszer a Cloudflare-en már közzétett manifestből és shardokból folytatja.
 6. Sikeres futás után a publikus `/vaulten-history-manifest.json` és az adatfájlok ellenőrzése is lefut. A `data/latest-manifest.json` commit a tényleges publikált adatgeneráció másolata. A Shopify loader adatcímét egyszer erre az originre kell beállítani; a napi futáshoz nem kell Shopify-kulcs.
 
-A csomag helyben előkészített; attól, hogy ezek a fájlok léteznek, még nincs aktív GitHub workflow vagy Cloudflare hosting.
+A működő telepítés nyilvános adatai: [Vaulten árarchívum](https://vaulten-tcg-history.pages.dev/vaulten-history-manifest.json). A futások és az indítás típusa a repository Actions lapján követhetők.
 
 ## Működés és hibakezelés
 
@@ -25,6 +25,7 @@ A csomag helyben előkészített; attól, hogy ezek a fájlok léteznek, még ni
 - Az új csomag az előző generáció adatfájljait is tartalmazza: így az öt percig gyorsítótárazott korábbi manifest is olvasható marad. Az adatnevek hash-alapúak, hosszú immutable cache-t kapnak; a manifest cache-e 300 másodperc.
 - A workflow nem indul `push` eseményre, ezért a saját adatcommitja nem okoz végtelen ciklust. Az egyidejű futások sorban állnak, a folyamatban lévő futást nem szakítják meg.
 - Az ütemezés csúszhat vagy kimaradhat. Nyilvános repositoryban 60 nap repository-inaktivitás után a GitHub kikapcsolhatja. A valódi adatgenerációk commitjai hasznos adatnaplót adnak; tartós forráskimaradásnál emberi ellenőrzés szükséges.
+- Ha az Actions lapon nincs új `schedule` eseményű futás, az indítás maradt el; ez nem bizonyít forráshibát. Ellenőrizd az alapértelmezett ágat, az aktív workflow állapotát és az ütemezéshez tartozó GitHub-felhasználót. Szükség esetén write jogosultságú, aktív felhasználó módosítsa a cron beállítását. A kézi `bootstrap=false` futás pótolja az adatfrissítést, de önmagában nem bizonyítja az automatikus indítást.
 - A `seed/` csak az első indulás és tudatos helyreállítás alapja. Az elveszett repository-auditot ne pótold új bootstrap futtatással egy már működő hoston.
 - Nem tölti újra naponta az archívumot: az inkrementális modul az új, teljes napi forrásgenerációt dolgozza fel. Kimaradt napon nincs kitalált ár vagy előzőérték-másolás; a hiány null marad. Utólagos kitöltéshez külön igazolt, dátumozott archívumminta kell.
 - Az Actions cache a hitelesített napi forrásválaszokat és a 24 órás kérésnaplót együtt őrzi, hibás gyűjtés után is. A kulcs a forrásmarker és az egyedi futásazonosító; egy részleges mentés nem akadályozza a későbbi teljes mentést. A lockfájl nincs a cache-ben. A GitHub törölheti a cache-t: a publikus előző csomag a tartós történeti állapot, nem ez a gyorsítótár.

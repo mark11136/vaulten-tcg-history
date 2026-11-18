@@ -2,7 +2,9 @@ name: Daily verified card-price history
 
 on:
   schedule:
-    - cron: '17 8 * * *'
+    # GitHub schedules can be delayed or dropped. Retry four times daily;
+    # the source marker makes unchanged runs a no-op without deployment.
+    - cron: '37 */6 * * *'
   workflow_dispatch:
     inputs:
       bootstrap:
