@@ -54,7 +54,9 @@ export function createHandler(deps={}) {
     const controller=new AbortController(),timer=timeout(()=>controller.abort(),10000);
     let stage='fetch',upstreamStatus=0;
     try{
-      const upstream=await fetcher(UPSTREAM,{method:'GET',headers:{Accept:'application/json'},credentials:'omit',redirect:'error',signal:controller.signal});
+      // Workers supports manual/follow, but not the browser's redirect:'error'.
+      // Manual returns 3xx unchanged; boundedJson rejects every non-2xx response.
+      const upstream=await fetcher(UPSTREAM,{method:'GET',headers:{Accept:'application/json','User-Agent':'VaultenTCG-PublicKeys/1.0 (+https://vaultentcg.com)'},credentials:'omit',redirect:'manual',signal:controller.signal});
       upstreamStatus=Number.isInteger(upstream.status)?upstream.status:0;
       stage='body';const body=await boundedJson(upstream);
       stage='keys';const normalized=publicKeys(body),answer=json(normalized,200,true);
