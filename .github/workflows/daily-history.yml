@@ -1,10 +1,8 @@
 name: Daily verified card-price history
 
 on:
-  schedule:
-    # GitHub schedules can be delayed or dropped. Retry four times daily;
-    # the source marker makes unchanged runs a no-op without deployment.
-    - cron: '13 1,7,13,19 * * *'
+  # Cloudflare scheduler/ dispatches at 01:13, 07:13, 13:13 and 19:13 UTC.
+  # One recurring clock; keep workflow_dispatch active for it and manual recovery.
   workflow_dispatch:
     inputs:
       bootstrap:

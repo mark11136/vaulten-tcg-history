@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "test": "node --test tests/*.test.cjs",
+    "test": "node --test tests/*.test.cjs scheduler/tests/*.test.mjs",
     "source": "node scripts/source.cjs",
     "build": "node scripts/build.cjs",
     "validate": "node scripts/validate.cjs public",
