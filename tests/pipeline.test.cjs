@@ -221,7 +221,7 @@ test('public output rejects stray environment or secret files',async t=>{
 });
 test('workflow is pinned, manual/scheduled only, and scopes secrets to deploy',async()=>{
   const y=await fs.readFile(path.join(__dirname,'..','.github','workflows','daily-history.yml'),'utf8');
-  assert.match(y,/cron: '37 \*\/6 \* \* \*'/);assert.match(y,/workflow_dispatch:/);assert.doesNotMatch(y,/\n  push:/);
+  assert.match(y,/cron: '13 1,7,13,19 \* \* \*'/);assert.match(y,/workflow_dispatch:/);assert.doesNotMatch(y,/\n  push:/);
   assert.match(y,/cancel-in-progress: false/);assert.match(y,/permissions: \{\}/);assert.match(y,/contents: write/);
   for(const line of y.split('\n').filter(x=>x.includes('uses:')))assert.match(line,/@[a-f0-9]{40}(?:\s|$)/);
   assert.ok(y.indexOf('node scripts/verify-live.cjs')<y.indexOf('git add -- data/latest-manifest.json'));

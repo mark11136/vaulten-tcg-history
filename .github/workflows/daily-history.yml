@@ -4,7 +4,7 @@ on:
   schedule:
     # GitHub schedules can be delayed or dropped. Retry four times daily;
     # the source marker makes unchanged runs a no-op without deployment.
-    - cron: '37 */6 * * *'
+    - cron: '13 1,7,13,19 * * *'
   workflow_dispatch:
     inputs:
       bootstrap:

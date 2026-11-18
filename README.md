@@ -1,6 +1,6 @@
 # Vaulten TCG – napi árdiagram-adatok
 
-Ez a külön adattár naponta **00:37, 06:37, 12:37 és 18:37 UTC-kor** ellenőrzi az ingyenes raw árdiagram-adatok forrását. Csak új forrásgeneráció esetén készít ellenőrzött adatcsomagot és teszi Cloudflare Pagesre. A négy indítási lehetőség csökkenti egy kimaradó vagy késő forrásfrissítés hatását. A Shopify weboldal a publikus JSON-fájlokat olvassa. A futás nem módosít Shopify-t, és nem tartalmaz fizetős vagy minősítettkártya-adatforrást.
+Ez a külön adattár naponta **01:13, 07:13, 13:13 és 19:13 UTC-kor** ellenőrzi az ingyenes raw árdiagram-adatok forrását. Csak új forrásgeneráció esetén készít ellenőrzött adatcsomagot és teszi Cloudflare Pagesre. A négy indítási lehetőség csökkenti egy kimaradó vagy késő forrásfrissítés hatását. A Shopify weboldal a publikus JSON-fájlokat olvassa. A futás nem módosít Shopify-t, és nem tartalmaz fizetős vagy minősítettkártya-adatforrást.
 
 ## Egyszeri beállítás
 
