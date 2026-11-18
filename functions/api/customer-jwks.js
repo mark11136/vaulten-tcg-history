@@ -52,12 +52,16 @@ export function createHandler(deps={}) {
     const cacheKey=new Request(CACHE_URL,{method:'GET'});
     if(cache){try{const hit=await cache.match(cacheKey);if(hit)return hit;}catch(_){}}
     const controller=new AbortController(),timer=timeout(()=>controller.abort(),10000);
+    let stage='fetch',upstreamStatus=0;
     try{
       const upstream=await fetcher(UPSTREAM,{method:'GET',headers:{Accept:'application/json'},credentials:'omit',redirect:'error',signal:controller.signal});
-      const normalized=publicKeys(await boundedJson(upstream)),answer=json(normalized,200,true);
+      upstreamStatus=Number.isInteger(upstream.status)?upstream.status:0;
+      stage='body';const body=await boundedJson(upstream);
+      stage='keys';const normalized=publicKeys(body),answer=json(normalized,200,true);
+      stage='cache';
       if(cache){const saving=cache.put(cacheKey,answer.clone()).catch(()=>{});if(context.waitUntil)context.waitUntil(saving);else await saving;}
       return answer;
-    }catch(_){return json({error:'Verification keys temporarily unavailable'},502);}
+    }catch(_){return json({error:'Verification keys temporarily unavailable',stage,upstreamStatus},502);}
     finally{clear(timer);}
   };
 }
